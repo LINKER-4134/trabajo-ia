@@ -67,10 +67,29 @@ namespace UDIT.IA3.Guardia
                  "Sin esto el guardia parpadea entre estados. Es la HISTÉRESIS.")]
         [Range(0f, 0.5f)] public float Histeresis = 0.1f;
 
+        [Header("Pesos de la evidencia")]
+        public float PesoDistancia = 0.3f;
+        public float PesoAngulo = 0.3f;
+        public float PesoRayos = 0.4f;
+
+        private static readonly Vector2[] PuntosObjetivo =
+        {
+            new Vector2(0f, 0.8f),
+            new Vector2(0f, 0f),
+            new Vector2(0f, -0.9f),
+            new Vector2(-0.4f, 0.5f),
+            new Vector2(0.4f, 0.5f)
+        };
+
         // Estado interno del sensor. Lo publica en la pizarra al final de Percibir.
         private float _sospecha;
+        private float _evidencia;
         private NivelSospecha _nivel = NivelSospecha.Tranquilo;
         private bool _visiblePrevio;
+
+        private readonly Vector3[] _puntosMundo = new Vector3[PuntosObjetivo.Length];
+        private readonly bool[] _rayoLibre = new bool[PuntosObjetivo.Length];
+        private bool _rayosCalculados;
 
         /// <summary>Solo para los gizmos: si la última comprobación dio positivo.</summary>
         public bool VisibleAhora { get; private set; }
@@ -88,22 +107,15 @@ namespace UDIT.IA3.Guardia
             }
         }
 
-        // ───────────────────────────────────────────────────────────────────
-        //  EL CICLO DE PERCEPCIÓN
-        // ───────────────────────────────────────────────────────────────────
-
         public void Percibir(Blackboard bb)
         {
             if (Objetivo == null) return;
 
-            // ── ¿Lo veo? ────────────────────────────────────────────────────
             bool visible = ComprobarVision();
             VisibleAhora = visible;
 
-            // ── El medidor ──────────────────────────────────────────────────
             ActualizarSospecha(visible, Time.deltaTime);
 
-            // ── Publicar en la pizarra ──────────────────────────────────────
             bb.Set(ClavesBB.Visible, visible);
             bb.Set(ClavesBB.Sospecha, _sospecha);
             bb.Set(ClavesBB.Nivel, _nivel);
@@ -126,83 +138,69 @@ namespace UDIT.IA3.Guardia
             _visiblePrevio = visible;
         }
 
-        // ───────────────────────────────────────────────────────────────────
-        //  LAS TRES ETAPAS
-        // ───────────────────────────────────────────────────────────────────
-
         private bool ComprobarVision()
         {
+            _evidencia = 0f;
+            _rayosCalculados = false;
+
             // ETAPA 1 · ALCANCE ✅
             // Comparamos distancias al cuadrado para ahorrarnos la raíz.
             Vector3 haciaObjetivo = Objetivo.position - Ojos.position;
 
             if (haciaObjetivo.sqrMagnitude > Alcance * Alcance) return false;
 
-            // ETAPA 2 · ÁNGULO ❌ TODO
-            //
-            // Comprobad que el objetivo cae dentro del cono de AnguloVision
-            // grados alrededor de Ojos.forward.
-            //
-            // Pista: Vector3.Angle(Ojos.forward, haciaObjetivo) <= AnguloVision * 0.5f
-            // Cuidado con el 0.5: AnguloVision es el cono COMPLETO.
-            // Y cuidado con la componente Y si vuestro suelo no es plano.
+            float mitad = AnguloVision * 0.5f;
+            float angulo = Vector3.Angle(Ojos.forward, haciaObjetivo);
+            if (angulo > mitad) return false;
 
-            // ETAPA 3 · OCLUSIÓN ❌ TODO
-            //
-            // Lanzad un Physics.Raycast desde Ojos.position hacia VARIOS puntos
-            // del objetivo, no solo hacia su centro. Con tres basta: cabeza
-            // (+1.6f en Y), torso (+0.9f) y pies (+0.1f) si el pivote está en
-            // los pies. La cápsula de Unity lo tiene en el CENTRO: con ella son
-            // +0.8f, 0f y -0.9f (README_Montaje, 3.3).
-            //
-            // Si CUALQUIERA de los tres llega sin chocar contra CapasQueOcluyen,
-            // el objetivo es visible. Devolved además cuántos han llegado: es
-            // un factor estupendo para el medidor (ver «visibilidad parcial»).
-            //
-            // Pista:
-            //   Physics.Raycast(Ojos.position, dir.normalized, dist, CapasQueOcluyen)
-            //   devuelve TRUE si ha chocado, es decir, si NO se ve.
+            Vector3 lado = Vector3.Cross(Vector3.up, haciaObjetivo).normalized;
 
-            return true;   // ← mientras no hagáis las etapas 2 y 3, ve a través de las paredes
+            int llegan = 0;
+            for (int i = 0; i < PuntosObjetivo.Length; i++)
+            {
+                Vector3 punto = Objetivo.position
+                              + lado * PuntosObjetivo[i].x
+                              + Vector3.up * PuntosObjetivo[i].y;
+                Vector3 dir = punto - Ojos.position;
+                bool libre = !Physics.Raycast(Ojos.position, dir.normalized, dir.magnitude, CapasQueOcluyen);
+
+                _puntosMundo[i] = punto;
+                _rayoLibre[i] = libre;
+                if (libre) llegan++;
+            }
+            _rayosCalculados = true;
+
+            if (llegan == 0) return false;
+
+            float factorDistancia = 1f - haciaObjetivo.magnitude / Alcance;
+            float factorAngulo = mitad > 0f ? 1f - angulo / mitad : 1f;
+            float factorRayos = llegan / (float)PuntosObjetivo.Length;
+
+            _evidencia = Mathf.Clamp01(PesoDistancia * factorDistancia
+                                     + PesoAngulo * factorAngulo
+                                     + PesoRayos * factorRayos);
+            return true;
         }
-
-        // ───────────────────────────────────────────────────────────────────
-        //  EL MEDIDOR DE SOSPECHA
-        // ───────────────────────────────────────────────────────────────────
 
         private void ActualizarSospecha(bool visible, float dt)
         {
-            // TODO · APARTADO A.2 y A.3 del enunciado
-            //
-            // Ahora mismo esto es un INTERRUPTOR: 0 o 1, sin matices y sin
-            // memoria. Es justo lo que el enunciado os pide sustituir.
-            //
-            // Lo que tiene que hacer:
-            //
-            //  1) Si es visible, calcular la EVIDENCIA en [0,1] combinando al
-            //     menos TRES factores:
-            //        · distancia  — más cerca, más evidencia
-            //        · ángulo     — más centrado en el cono, más evidencia
-            //        · uno vuestro — iluminación, si se mueve, si va agachado,
-            //                        cuántos raycasts han llegado, tiempo
-            //                        continuado en el cono...
-            //
-            //     Y DECIDID si los combináis por PRODUCTO o por MEDIA. No es lo
-            //     mismo (sesión 4, «Producto o suma» de B2.1b): con el producto, un solo
-            //     factor a cero anula la detección; con la media, no. Es una
-            //     decisión de diseño y hay que justificarla en la memoria.
-            //
-            //  2) Subir:  _sospecha += evidencia * VelocidadSubida * dt
-            //     Bajar:  _sospecha -= VelocidadBajada * dt
-            //     ...y Mathf.Clamp01 al final. La ASIMETRÍA entre las dos
-            //     velocidades ES el comportamiento: sube en 1-2 s, olvida en
-            //     10-15 s.
-            //
-            //  3) Cruzar umbrales CON HISTÉRESIS (método de abajo).
+            if (visible) _sospecha += _evidencia * VelocidadSubida * dt;
+            else _sospecha -= VelocidadBajada * dt;
 
-            _sospecha = visible ? 1f : 0f;          // ← interruptor. Sustituidlo.
+            _sospecha = Mathf.Clamp01(_sospecha);
 
             _nivel = ActualizarNivel(_sospecha, _nivel);
+        }
+
+        private void OnDrawGizmos()
+        {
+            if (!_rayosCalculados || Ojos == null) return;
+
+            for (int i = 0; i < _puntosMundo.Length; i++)
+            {
+                Gizmos.color = _rayoLibre[i] ? Color.green : Color.red;
+                Gizmos.DrawLine(Ojos.position, _puntosMundo[i]);
+            }
         }
 
         /// <summary>
