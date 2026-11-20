@@ -750,9 +750,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 819659237c419474482af93a29aae836, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::UDIT.IA3.Guardia.GuardiaAgente
-  Cerebro: 0
+  Cerebro: 1
   FrecuenciaDecision: 10
-  MostrarTraza: 0
+  MostrarTraza: 1
 --- !u!114 &891952128
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -907,7 +907,7 @@ Transform:
   m_GameObject: {fileID: 891952125}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -10.29, y: 1.2, z: 13.68}
+  m_LocalPosition: {x: -17.9, y: 1.2, z: 16.17}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -1851,7 +1851,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 819659237c419474482af93a29aae836, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::UDIT.IA3.Guardia.GuardiaAgente
-  Cerebro: 0
+  Cerebro: 1
   FrecuenciaDecision: 10
   MostrarTraza: 1
 --- !u!114 &2039133910

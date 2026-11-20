@@ -29,6 +29,7 @@ namespace UDIT.IA3.Guardia
             {
                 Pizarra.Set(ClavesBB.Destino, ruta.PuntoActual);
                 Pizarra.Set(ClavesBB.TieneDestino, true);
+                Pizarra.Set(ClavesBB.HaLlegado, false);
             }
             else
             {
