@@ -781,16 +781,16 @@ MonoBehaviour:
   Objetivo: {fileID: 0}
   TagObjetivo: Player
   Alcance: 15
-  AnguloVision: 70
-  Ojos: {fileID: 1998472577}
+  AnguloVision: 60
+  Ojos: {fileID: 2141647891}
   CapasQueOcluyen:
     serializedVersion: 2
     m_Bits: 64
-  VelocidadSubida: 0.8
-  VelocidadBajada: 0.08
+  VelocidadSubida: 1.5
+  VelocidadBajada: 0.2
   UmbralSospecha: 0.35
-  UmbralAlerta: 0.8
-  Histeresis: 0.1
+  UmbralAlerta: 0.7
+  Histeresis: 0.25
   PesoDistancia: 0.3
   PesoAngulo: 0.3
   PesoRayos: 0.4
@@ -1719,7 +1719,7 @@ Transform:
   m_GameObject: {fileID: 1968127607}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0.19, y: 1.83, z: -6.56}
+  m_LocalPosition: {x: 13.3, y: 1.83, z: -12.69}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -1882,16 +1882,16 @@ MonoBehaviour:
   Objetivo: {fileID: 0}
   TagObjetivo: Player
   Alcance: 15
-  AnguloVision: 70
+  AnguloVision: 60
   Ojos: {fileID: 2141647891}
   CapasQueOcluyen:
     serializedVersion: 2
     m_Bits: 64
-  VelocidadSubida: 0.8
-  VelocidadBajada: 0.08
+  VelocidadSubida: 1.5
+  VelocidadBajada: 0.2
   UmbralSospecha: 0.35
-  UmbralAlerta: 0.8
-  Histeresis: 0.1
+  UmbralAlerta: 0.7
+  Histeresis: 0.25
   PesoDistancia: 0.3
   PesoAngulo: 0.3
   PesoRayos: 0.4
