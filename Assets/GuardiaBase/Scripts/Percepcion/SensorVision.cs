@@ -42,7 +42,7 @@ namespace UDIT.IA3.Guardia
         public Transform Ojos;
         public LayerMask CapasQueOcluyen;
 
-        [Header("Medidor de sospecha — APARTADO A DEL ENUNCIADO")]
+        [Header("Medidor de sospecha")]
         public float VelocidadSubida = 0.8f;
         public float VelocidadBajada = 0.08f;
         [Range(0f, 1f)] public float UmbralSospecha = 0.35f;

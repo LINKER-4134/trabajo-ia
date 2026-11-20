@@ -61,7 +61,7 @@ namespace UDIT.IA3.Guardia
                     new Condition("¿Hay última pos?", bb =>
                         bb.Get(ClavesBB.TieneUltimaPos, false)),
                     new IrA("IrAUltimaPos", ClavesBB.UltimaPos),
-                    new Esperar(4f),
+                    new Esperar(1f),
                     new Olvidar()),
 
                 new Patrullar(_agente)

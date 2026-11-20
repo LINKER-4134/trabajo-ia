@@ -2,7 +2,7 @@ namespace UDIT.IA3.Guardia
 {
     public class EstadoBuscar : State
     {
-        private const float EsperaSegundos = 4f;
+        private const float EsperaSegundos = 1;
         private bool _esperando;
         private float _fin;
 
