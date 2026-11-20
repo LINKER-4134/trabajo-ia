@@ -114,7 +114,7 @@ namespace UDIT.IA3.Guardia
             }
 
             if (DibujarUltimaPos && Application.isPlaying && _agente != null &&
-                _agente.Pizarra != null && _agente.Pizarra.Get(ClavesBB.TieneUltimaPos, false))
+     _agente.Pizarra != null && _agente.Pizarra.Get(ClavesBB.TieneUltimaPos, false))
             {
                 Vector3 lkp = _agente.Pizarra.Get(ClavesBB.UltimaPos, Vector3.zero);
 
@@ -122,6 +122,11 @@ namespace UDIT.IA3.Guardia
                 Gizmos.DrawWireCube(lkp + Vector3.up * 0.1f, new Vector3(0.6f, 0.2f, 0.6f));
                 Gizmos.DrawLine(transform.position + Vector3.up, lkp + Vector3.up * 0.2f);
             }
+
+#if UNITY_EDITOR
+            if (Application.isPlaying && _agente != null && _agente.MostrarTraza)
+                UnityEditor.Handles.Label(transform.position + Vector3.up * 2.6f, _agente.UltimaTraza);
+#endif
         }
     }
 }
