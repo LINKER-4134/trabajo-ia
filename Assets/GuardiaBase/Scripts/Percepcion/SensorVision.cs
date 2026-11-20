@@ -33,38 +33,20 @@ namespace UDIT.IA3.Guardia
     public class SensorVision : MonoBehaviour, ISensor
     {
         [Header("Objetivo")]
-        [Tooltip("El jugador. Si lo dejáis vacío se busca por tag al arrancar.")]
         public Transform Objetivo;
         public string TagObjetivo = "Player";
 
         [Header("Cono de visión")]
         public float Alcance = 15f;
         [Range(0f, 180f)] public float AnguloVision = 60f;
-
-        [Tooltip("Desde dónde se mira. Si está vacío se usa el propio transform. " +
-                 "Poned aquí la cabeza: mirar desde los pies da resultados raros.")]
         public Transform Ojos;
-
-        [Tooltip("Qué capas TAPAN la visión. Marcad aquí las paredes. " +
-                 "Si dejáis esto en Nothing, no habrá oclusión y se notará.")]
         public LayerMask CapasQueOcluyen;
 
         [Header("Medidor de sospecha — APARTADO A DEL ENUNCIADO")]
-        [Tooltip("Cuánto sube por segundo con evidencia máxima.")]
         public float VelocidadSubida = 0.8f;
-
-        [Tooltip("Cuánto baja por segundo sin ver nada. Debe ser MUY inferior " +
-                 "a la de subida: subir en 1-2 s, olvidar en 10-15 s.")]
         public float VelocidadBajada = 0.08f;
-
-        [Tooltip("Umbral tranquilo → sospecha (al subir).")]
         [Range(0f, 1f)] public float UmbralSospecha = 0.35f;
-
-        [Tooltip("Umbral sospecha → alerta (al subir).")]
         [Range(0f, 1f)] public float UmbralAlerta = 0.8f;
-
-        [Tooltip("Cuánto hay que bajar por debajo del umbral para volver atrás. " +
-                 "Sin esto el guardia parpadea entre estados. Es la HISTÉRESIS.")]
         [Range(0f, 0.5f)] public float Histeresis = 0.1f;
 
         [Header("Pesos de la evidencia")]
@@ -81,7 +63,6 @@ namespace UDIT.IA3.Guardia
             new Vector2(0.4f, 0.5f)
         };
 
-        // Estado interno del sensor. Lo publica en la pizarra al final de Percibir.
         private float _sospecha;
         private float _evidencia;
         private NivelSospecha _nivel = NivelSospecha.Tranquilo;
@@ -91,7 +72,6 @@ namespace UDIT.IA3.Guardia
         private readonly bool[] _rayoLibre = new bool[PuntosObjetivo.Length];
         private bool _rayosCalculados;
 
-        /// <summary>Solo para los gizmos: si la última comprobación dio positivo.</summary>
         public bool VisibleAhora { get; private set; }
         public float SospechaActual { get { return _sospecha; } }
         public NivelSospecha NivelActual { get { return _nivel; } }
@@ -120,9 +100,6 @@ namespace UDIT.IA3.Guardia
             bb.Set(ClavesBB.Sospecha, _sospecha);
             bb.Set(ClavesBB.Nivel, _nivel);
 
-            // La última posición conocida se escribe EN EL INSTANTE en que se
-            // pierde el contacto. Ni antes (aún lo veo) ni después (ya no sé
-            // dónde estaba).
             if (visible)
             {
                 bb.Set(ClavesBB.UltimaPos, Objetivo.position);
@@ -143,15 +120,14 @@ namespace UDIT.IA3.Guardia
             _evidencia = 0f;
             _rayosCalculados = false;
 
-            // ETAPA 1 · ALCANCE ✅
-            // Comparamos distancias al cuadrado para ahorrarnos la raíz.
             Vector3 haciaObjetivo = Objetivo.position - Ojos.position;
 
             if (haciaObjetivo.sqrMagnitude > Alcance * Alcance) return false;
 
             float mitad = AnguloVision * 0.5f;
             float angulo = Vector3.Angle(Ojos.forward, haciaObjetivo);
-            if (angulo > mitad) return false;
+            bool vision360 = _nivel >= NivelSospecha.Sospecha;
+            if (!vision360 && angulo > mitad) return false;
 
             Vector3 lado = Vector3.Cross(Vector3.up, haciaObjetivo).normalized;
 
@@ -173,7 +149,7 @@ namespace UDIT.IA3.Guardia
             if (llegan == 0) return false;
 
             float factorDistancia = 1f - haciaObjetivo.magnitude / Alcance;
-            float factorAngulo = mitad > 0f ? 1f - angulo / mitad : 1f;
+            float factorAngulo = mitad > 0f ? Mathf.Clamp01(1f - angulo / mitad) : 1f;
             float factorRayos = llegan / (float)PuntosObjetivo.Length;
 
             _evidencia = Mathf.Clamp01(PesoDistancia * factorDistancia
@@ -203,16 +179,6 @@ namespace UDIT.IA3.Guardia
             }
         }
 
-        /// <summary>
-        /// Umbrales con histéresis: para SUBIR de nivel hace falta pasar el
-        /// umbral; para BAJAR hace falta caer por debajo del umbral MENOS la
-        /// histéresis. Sin esto, un valor oscilando alrededor de 0,35 hace que
-        /// el guardia entre y salga de sospecha varias veces por segundo, y en
-        /// pantalla parece que le da un ataque.
-        ///
-        /// Este método OS LO DOY HECHO porque es fácil equivocarse y no es lo
-        /// interesante. Lo interesante es el medidor de arriba.
-        /// </summary>
         private NivelSospecha ActualizarNivel(float s, NivelSospecha actual)
         {
             switch (actual)

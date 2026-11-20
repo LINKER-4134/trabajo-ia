@@ -24,9 +24,7 @@ namespace UDIT.IA3.Guardia
 
         internal override void Enter()
         {
-            // Al entrar, apuntamos al punto de patrulla que toque.
             RutaPatrulla ruta = Agente.GetComponent<RutaPatrulla>();
-
             if (ruta != null && ruta.TieneRuta)
             {
                 Pizarra.Set(ClavesBB.Destino, ruta.PuntoActual);
@@ -34,8 +32,6 @@ namespace UDIT.IA3.Guardia
             }
             else
             {
-                // Sin ruta configurada nos quedamos quietos, pero avisamos:
-                // es un fallo de montaje de escena, no de código.
                 Pizarra.Set(ClavesBB.TieneDestino, false);
                 UnityEngine.Debug.LogWarning(
                     "[" + Agente.name + "] no tiene RutaPatrulla con puntos. " +
@@ -45,29 +41,25 @@ namespace UDIT.IA3.Guardia
 
         internal override void Execute()
         {
-            // ── 1. ¿Hay razón para dejar de patrullar? ──────────────────────
-            //
-            // Se pregunta a la PIZARRA, nunca al sensor. El estado no sabe si
-            // la sospecha viene de la vista, del oído o de que otro guardia dio
-            // la alarma, y no le hace falta saberlo. Eso es la separación de
-            // capas funcionando.
             NivelSospecha nivel = Pizarra.Get(ClavesBB.Nivel, NivelSospecha.Tranquilo);
+            bool visible = Pizarra.Get(ClavesBB.Visible, false);
 
-            if (nivel == NivelSospecha.Alerta)
+            if (nivel == NivelSospecha.Alerta && visible)
             {
-                // TODO · descomentad cuando tengáis EstadoPerseguir
-                // StateMachine.ChangeState(new EstadoPerseguir(StateMachine));
+                StateMachine.ChangeState(new EstadoPerseguir(StateMachine));
                 return;
             }
-
             if (nivel == NivelSospecha.Sospecha)
             {
-                // TODO · descomentad cuando tengáis EstadoInvestigar
-                // StateMachine.ChangeState(new EstadoInvestigar(StateMachine));
+                StateMachine.ChangeState(new EstadoInvestigar(StateMachine));
+                return;
+            }
+            if (Pizarra.Get(ClavesBB.TieneUltimaPos, false))
+            {
+                StateMachine.ChangeState(new EstadoBuscar(StateMachine));
                 return;
             }
 
-            // ── 2. Si no, seguir la ruta ────────────────────────────────────
             if (Pizarra.Get(ClavesBB.HaLlegado, false))
             {
                 RutaPatrulla ruta = Agente.GetComponent<RutaPatrulla>();
@@ -79,13 +71,6 @@ namespace UDIT.IA3.Guardia
             }
         }
 
-        internal override void Exit()
-        {
-            // Aquí no hay nada que limpiar. Pero el método existe y está vacío
-            // a propósito: cuando en Enter() arranquéis una animación, un bark
-            // o una corrutina, Exit() es donde se apaga. Si no lo hacéis, os
-            // quedaréis con guardias diciendo «¿quién anda ahí?» mientras
-            // persiguen. Pasa todos los años.
-        }
+        internal override void Exit() { }
     }
 }

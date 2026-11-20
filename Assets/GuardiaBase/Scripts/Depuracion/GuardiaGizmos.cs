@@ -40,9 +40,9 @@ namespace UDIT.IA3.Guardia
         {
             switch (n)
             {
-                case NivelSospecha.Alerta:   return new Color(1f, 0.2f, 0.2f);
+                case NivelSospecha.Alerta: return new Color(1f, 0.2f, 0.2f);
                 case NivelSospecha.Sospecha: return new Color(1f, 0.85f, 0.2f);
-                default:                     return new Color(0.4f, 0.9f, 0.4f);
+                default: return new Color(0.4f, 0.9f, 0.4f);
             }
         }
 
@@ -55,31 +55,44 @@ namespace UDIT.IA3.Guardia
             NivelSospecha nivel = _vision.NivelActual;
             Color c = ColorDe(nivel);
 
-            // ── El cono de visión ───────────────────────────────────────────
             if (DibujarCono)
             {
                 Gizmos.color = new Color(c.r, c.g, c.b, 0.85f);
 
-                float medio = _vision.AnguloVision * 0.5f;
-                Vector3 izq = Quaternion.Euler(0f, -medio, 0f) * ojos.forward;
-                Vector3 der = Quaternion.Euler(0f,  medio, 0f) * ojos.forward;
-
-                Gizmos.DrawLine(ojos.position, ojos.position + izq * _vision.Alcance);
-                Gizmos.DrawLine(ojos.position, ojos.position + der * _vision.Alcance);
-
-                // El arco, a trozos
-                const int pasos = 16;
-                Vector3 previo = ojos.position + izq * _vision.Alcance;
-                for (int i = 1; i <= pasos; i++)
+                if (nivel >= NivelSospecha.Sospecha)
                 {
-                    float t = -medio + (_vision.AnguloVision * i / pasos);
-                    Vector3 p = ojos.position +
-                                (Quaternion.Euler(0f, t, 0f) * ojos.forward) * _vision.Alcance;
-                    Gizmos.DrawLine(previo, p);
-                    previo = p;
+                    const int pasosCirculo = 48;
+                    Vector3 previoC = ojos.position + Vector3.forward * _vision.Alcance;
+                    for (int i = 1; i <= pasosCirculo; i++)
+                    {
+                        float t = 360f * i / pasosCirculo;
+                        Vector3 p = ojos.position +
+                                    (Quaternion.Euler(0f, t, 0f) * Vector3.forward) * _vision.Alcance;
+                        Gizmos.DrawLine(previoC, p);
+                        previoC = p;
+                    }
+                }
+                else
+                {
+                    float medio = _vision.AnguloVision * 0.5f;
+                    Vector3 izq = Quaternion.Euler(0f, -medio, 0f) * ojos.forward;
+                    Vector3 der = Quaternion.Euler(0f, medio, 0f) * ojos.forward;
+
+                    Gizmos.DrawLine(ojos.position, ojos.position + izq * _vision.Alcance);
+                    Gizmos.DrawLine(ojos.position, ojos.position + der * _vision.Alcance);
+
+                    const int pasos = 16;
+                    Vector3 previo = ojos.position + izq * _vision.Alcance;
+                    for (int i = 1; i <= pasos; i++)
+                    {
+                        float t = -medio + (_vision.AnguloVision * i / pasos);
+                        Vector3 p = ojos.position +
+                                    (Quaternion.Euler(0f, t, 0f) * ojos.forward) * _vision.Alcance;
+                        Gizmos.DrawLine(previo, p);
+                        previo = p;
+                    }
                 }
 
-                // Línea directa al objetivo cuando lo tiene a la vista
                 if (Application.isPlaying && _vision.VisibleAhora && _vision.Objetivo != null)
                 {
                     Gizmos.color = Color.red;
@@ -87,7 +100,6 @@ namespace UDIT.IA3.Guardia
                 }
             }
 
-            // ── La barra de sospecha, sobre la cabeza ───────────────────────
             if (DibujarSospecha && Application.isPlaying)
             {
                 Vector3 baseBarra = transform.position + Vector3.up * 2.3f - Vector3.right * 0.5f;
@@ -101,7 +113,6 @@ namespace UDIT.IA3.Guardia
                     Gizmos.DrawLine(baseBarra, baseBarra + Vector3.right * s);
             }
 
-            // ── La última posición conocida ─────────────────────────────────
             if (DibujarUltimaPos && Application.isPlaying && _agente != null &&
                 _agente.Pizarra != null && _agente.Pizarra.Get(ClavesBB.TieneUltimaPos, false))
             {
